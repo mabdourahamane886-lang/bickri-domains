@@ -1,0 +1,3 @@
+-- Bickri Domains schema is provisioned in Supabase project okdohokhlkxrmxpevees.
+-- Keep this file synchronized with the deployed domain_* tables.
+-- Secrets must never be stored here.

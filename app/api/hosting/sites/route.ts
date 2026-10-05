@@ -1,27 +1,7 @@
 import {NextResponse} from "next/server";
 import {createServerSupabaseClient} from "@/lib/supabaseServer";
 import {createAdminClient} from "@/lib/supabaseAdmin";
-
 const slugPattern=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
-
-export async function POST(req:Request){
-  const supabase=await createServerSupabaseClient();
-  const {data:{user}}=await supabase.auth.getUser();
-  if(!user)return NextResponse.json({error:"Connexion requise pour créer un site."},{status:401});
-
-  const body=await req.json();
-  const slug=String(body.slug||"").trim().toLowerCase();
-  const title=String(body.title||"Mon site Bickri").trim().slice(0,160);
-  const description=String(body.description||"").trim().slice(0,500);
-  const contentHtml=String(body.content_html||"").slice(0,100000);
-
-  if(!slugPattern.test(slug))return NextResponse.json({error:"Sous-domaine invalide."},{status:400});
-
-  const host=slug+"."+(process.env.BICKRI_HOSTING_DOMAIN||"bickridomains.com");
-  const {data,error}=await createAdminClient().from("domain_sites").insert({
-    user_id:user.id,slug,host,title,description,content_html:contentHtml,status:"published"
-  }).select("id,slug,host,title,status").single();
-
-  if(error)return NextResponse.json({error:error.code==="23505"?"Ce sous-domaine existe déjà.":"Impossible de créer le site."},{status:error.code==="23505"?409:500});
-  return NextResponse.json({site:data},{status:201});
-}
+export async function GET(){const s=await createServerSupabaseClient();const {data:{user}}=await s.auth.getUser();if(!user)return NextResponse.json({error:"Connexion requise."},{status:401});const {data,error}=await s.from("domain_sites").select("id,slug,host,title,description,status,custom_domain,created_at,updated_at").eq("user_id",user.id).order("created_at",{ascending:false});return NextResponse.json({sites:data||[],error:error?.message});}
+export async function POST(req:Request){const s=await createServerSupabaseClient();const {data:{user}}=await s.auth.getUser();if(!user)return NextResponse.json({error:"Connexion requise pour créer un site."},{status:401});const b=await req.json();const slug=String(b.slug||"").trim().toLowerCase();const title=String(b.title||"Mon site Bickri").trim().slice(0,160);const description=String(b.description||"").trim().slice(0,500);if(!slugPattern.test(slug))return NextResponse.json({error:"Sous-domaine invalide."},{status:400});const host=slug+"."+(process.env.BICKRI_HOSTING_DOMAIN||"bickridomains.com");const {data,error}=await createAdminClient().from("domain_sites").insert({user_id:user.id,slug,host,title,description,content_html:"",status:"published"}).select("id,slug,host,title,description,status").single();if(error)return NextResponse.json({error:error.code==="23505"?"Ce sous-domaine existe déjà.":"Impossible de créer le site."},{status:error.code==="23505"?409:500});return NextResponse.json({site:data},{status:201});}
+export async function PATCH(req:Request){const s=await createServerSupabaseClient();const {data:{user}}=await s.auth.getUser();if(!user)return NextResponse.json({error:"Connexion requise."},{status:401});const b=await req.json();const id=String(b.id||"");const patch:any={};for(const k of ["title","description","status","custom_domain"])if(k in b)patch[k]=String(b[k]).slice(0,500);if("status" in b&&!["draft","published","suspended"].includes(patch.status))return NextResponse.json({error:"Statut invalide."},{status:400});const {data,error}=await s.from("domain_sites").update(patch).eq("id",id).eq("user_id",user.id).select("id,slug,host,title,description,status,custom_domain").single();return NextResponse.json({site:data,error:error?.message},{status:error?400:200});}

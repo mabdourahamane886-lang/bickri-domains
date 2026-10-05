@@ -1,0 +1,4 @@
+export type Availability={domain:string;available:boolean;price:number;currency:string;tld:string};
+export interface DomainProvider{checkAvailability(domain:string):Promise<Availability>;}
+export class MockDomainProvider implements DomainProvider{async checkAvailability(domain:string){const tld="."+domain.split(".").pop()!;const prices:Record<string,number>={".com":12000,".net":14000,".org":14000,".info":15000,".biz":15000};const normalized=domain.toLowerCase();return {domain:normalized,available:!["google.com","facebook.com","openai.com"].includes(normalized),price:prices[tld]??18000,currency:"XOF",tld};}}
+export function getDomainProvider():DomainProvider{return new MockDomainProvider();}

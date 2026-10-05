@@ -1,1 +1,40 @@
-"use client";import{useState}from"react";export default function Transfer(){const[domain,setDomain]=useState("");const[code,setCode]=useState("");const[msg,setMsg]=useState("");async function submit(e:React.FormEvent){e.preventDefault();const r=await fetch("/api/transfers",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({domain,auth_code:code})});const d=await r.json();setMsg(d.transfer?"Demande de transfert créée.":d.error||"Erreur");}return <main style={{minHeight:"100vh",background:"#07152f",color:"#fff",padding:30}}><div style={{maxWidth:700,margin:"auto"}}><a href="/dashboard" style={{color:"#d4aa45"}}>← Espace client</a><h1>Transférer un domaine</h1><p style={{color:"#b8c4d9"}}>Saisissez le domaine et son code EPP/Auth.</p><form onSubmit={submit} style={{display:"grid",gap:14}}><input value={domain} onChange={e=>setDomain(e.target.value)} placeholder="exemple.com" required/><input value={code} onChange={e=>setCode(e.target.value)} placeholder="Code EPP / Auth" required/><button style={{padding:14,background:"#d4aa45",border:0,borderRadius:10}}>Lancer le transfert</button></form>{msg&&<p>{msg}</p>}</div></main>
+"use client";
+
+import { useState } from "react";
+
+export default function Transfer() {
+  const [domain, setDomain] = useState("");
+  const [code, setCode] = useState("");
+  const [msg, setMsg] = useState("");
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const r = await fetch("/api/transfers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ domain, auth_code: code }),
+    });
+    const d = await r.json();
+    setMsg(d.transfer ? "Demande de transfert créée." : d.error || "Erreur");
+  }
+
+  return (
+    <main style={{ minHeight: "100vh", background: "#07152f", color: "#fff", padding: 30 }}>
+      <div style={{ maxWidth: 700, margin: "auto" }}>
+        <a href="/dashboard" style={{ color: "#d4aa45" }}>← Espace client</a>
+        <h1>Transférer un domaine</h1>
+        <p style={{ color: "#b8c4d9" }}>Saisissez le domaine et son code EPP/Auth.</p>
+
+        <form onSubmit={submit} style={{ display: "grid", gap: 14 }}>
+          <input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="exemple.com" required />
+          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Code EPP / Auth" required />
+          <button style={{ padding: 14, background: "#d4aa45", border: 0, borderRadius: 10 }}>
+            Lancer le transfert
+          </button>
+        </form>
+
+        {msg && <p>{msg}</p>}
+      </div>
+    </main>
+  );
+}

@@ -1,0 +1,2 @@
+import {NextResponse} from "next/server";import {getDomainProvider} from "@/lib/domains/provider";
+export async function GET(req:Request){const domain=new URL(req.url).searchParams.get("domain")?.trim().toLowerCase();if(!domain||!/^[a-z0-9-]+(\\.[a-z0-9-]+)+$/.test(domain))return NextResponse.json({error:"Nom de domaine invalide."},{status:400});return NextResponse.json(await getDomainProvider().checkAvailability(domain));}

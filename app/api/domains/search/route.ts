@@ -26,20 +26,33 @@ export async function GET(req: Request) {
     ? [query]
     : (tlds ?? []).map((item) => query + item.tld);
 
-  const results = await Promise.all(
-    domains.map(async (domain) => {
-      const providerResult = await getDomainProvider().checkAvailability(domain);
-      const tld = "." + domain.split(".").pop()!;
-      const pricing = (tlds ?? []).find((item) => item.tld === tld);
+  try {
+    const provider = getDomainProvider();
 
-      return {
-        ...providerResult,
-        price: pricing?.retail_price ? Number(pricing.retail_price) : providerResult.price,
-        currency: pricing?.currency ?? providerResult.currency,
-        subdomain: domain.split(".")[0] + "." + (process.env.BICKRI_HOSTING_DOMAIN || "bickridomains.com"),
-      };
-    })
-  );
+    const results = await Promise.all(
+      domains.map(async (domain) => {
+        const providerResult = await provider.checkAvailability(domain);
+        const tld = "." + domain.split(".").pop()!;
+        const pricing = (tlds ?? []).find((item) => item.tld === tld);
 
-  return NextResponse.json({ query, results });
+        return {
+          ...providerResult,
+          price: pricing?.retail_price ? Number(pricing.retail_price) : providerResult.price,
+          currency: pricing?.currency ?? providerResult.currency,
+          subdomain:
+            domain.split(".")[0] +
+            "." +
+            (process.env.BICKRI_HOSTING_DOMAIN || "bickridomains.com"),
+        };
+      })
+    );
+
+    return NextResponse.json({ query, results });
+  } catch (error) {
+    console.error("OpenSRS domain search failed:", error);
+    return NextResponse.json(
+      { error: "Le service de registre de domaines est temporairement indisponible." },
+      { status: 502 }
+    );
+  }
 }

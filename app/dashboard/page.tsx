@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
+import { createBrowserSupabaseClient } from "@/lib/supabaseBrowser";
 
 export default function Dashboard(){
   const [cart,setCart]=useState<any[]>([]),[domains,setDomains]=useState<any[]>([]),[sites,setSites]=useState<any[]>([]),[deployments,setDeployments]=useState<any[]>([]);
-  const [msg,setMsg]=useState(""),[tab,setTab]=useState("domains");
+  const [msg,setMsg]=useState(""),[tab,setTab]=useState("domains"),[userEmail,setUserEmail]=useState("");
   async function load(){const [a,b,c,d]=await Promise.all([fetch("/api/cart"),fetch("/api/domains"),fetch("/api/hosting/sites"),fetch("/api/deployments")]);setCart((await a.json()).items||[]);setDomains((await b.json()).domains||[]);setSites((await c.json()).sites||[]);setDeployments((await d.json()).deployments||[])}
-  useEffect(()=>{load()},[]);
+  useEffect(()=>{const s=createBrowserSupabaseClient();s.auth.getUser().then(({data})=>setUserEmail(data.user?.email||""));load()},[]);
   async function remove(domain:string){await fetch("/api/cart?domain="+encodeURIComponent(domain),{method:"DELETE"});load()}
   async function checkout(){const r=await fetch("/api/checkout",{method:"POST"});const x=await r.json();setMsg(x.message||x.error||"Commande créée.");load()}
   async function toggle(id:string,key:string,value:boolean){await fetch("/api/domains",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id,[key]:!value})});load()}
@@ -14,7 +15,7 @@ export default function Dashboard(){
   const tabs=[["domains","Mes domaines"],["cart","Panier"],["hosting","Hébergement"],["transfer","Transfert"],["dns","DNS"],["billing","Factures"]];
   const card={background:"#0d2346",border:"1px solid #203b67",borderRadius:18,padding:22} as any;
   return <main style={{minHeight:"100vh",background:"#07152f",color:"#fff",padding:24}}><div style={{maxWidth:1150,margin:"auto"}}>
-    <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap"}}><div><b style={{color:"#d4aa45"}}>BICKRI DOMAINS</b><h1>Espace client</h1><p style={{color:"#b8c4d9"}}>Domaines, hébergement, DNS, transferts et déploiements.</p></div><a href="/" style={{color:"#fff"}}>← Accueil</a></div>
+    <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap"}}><div><b style={{color:"#d4aa45"}}>BICKRI DOMAINS</b><h1>Espace client</h1><p style={{color:"#b8c4d9"}}>Domaines, hébergement, DNS, transferts et déploiements.</p></div><div style={{display:"flex",gap:12,alignItems:"center"}}><span style={{color:"#b8c4d9",fontSize:14}}>{userEmail}</span><a href="/logout" style={{color:"#d4aa45"}}>Déconnexion</a><a href="/" style={{color:"#fff"}}>← Accueil</a></div></div>
     <nav style={{display:"flex",gap:8,overflowX:"auto",padding:"20px 0"}}>{tabs.map(([id,label])=><button key={id} onClick={()=>setTab(id)} style={{padding:"11px 16px",borderRadius:999,border:"1px solid #29466f",background:tab===id?"#d4aa45":"#0d2346",color:tab===id?"#07152f":"#fff"}}>{label}</button>)}</nav>
     {msg&&<div style={{padding:14,background:"#15365e",borderRadius:12,marginBottom:16}}>{msg}</div>}
     <section style={card}>

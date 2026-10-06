@@ -6,11 +6,11 @@ const domainPattern = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z
 export async function GET() {
   const s = await createServerSupabaseClient();
   const { data: { user } } = await s.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Connexion requise." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: "Connexion requise.", code: "AUTH_REQUIRED" }, { status: 401 });
 
   const { data, error } = await s
     .from("domain_cart_items")
-    .select("*")
+    .select("id,user_id,domain,tld,years,price,currency,created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 

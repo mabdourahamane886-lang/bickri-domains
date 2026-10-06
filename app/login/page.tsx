@@ -14,6 +14,9 @@ export default function Login() {
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("error") === "confirmation") {
+      setMsg("Le lien de confirmation est invalide ou expiré. Demandez un nouvel e-mail puis réessayez.");
+    }
     const supabase = createBrowserSupabaseClient();
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) router.replace("/dashboard");
@@ -59,9 +62,13 @@ export default function Login() {
 
       if (result.error) {
         setMsg(
-          result.error.message.includes("Invalid login credentials")
+          result.error.message.includes("Invalid login credentials") || result.error.message.includes("invalid_credentials")
             ? "E-mail ou mot de passe incorrect."
-            : result.error.message
+            : result.error.message.toLowerCase().includes("email not confirmed")
+              ? "Confirmez votre adresse e-mail avant de vous connecter."
+              : result.error.message.toLowerCase().includes("rate limit")
+                ? "Trop de tentatives. Réessayez dans quelques minutes."
+                : "Impossible de finaliser la connexion. Vérifiez les informations saisies."
         );
         return;
       }

@@ -173,7 +173,17 @@ export default function Dashboard() {
 
         <section style={card}>
           {tab === "domains" && <>
-            <h2>Mes domaines</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <h2>Mes domaines</h2>
+              <button onClick={async () => {
+                const domain = prompt("Nom du domaine à ajouter au panier");
+                if (!domain) return;
+                const r = await fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ domain, tld: "." + domain.split(".").slice(1).join("."), years: 1 }) });
+                const x = await r.json();
+                setMsg(x.item ? "Domaine ajouté au panier." : x.error || "Impossible d'ajouter ce domaine.");
+                load();
+              }} style={{ padding: "11px 16px", border: 0, borderRadius: 10, background: "#d4aa45", color: "#07152f", fontWeight: 700 }}>+ Ajouter un domaine</button>
+            </div>
             {domains.length ? domains.map(d => (
               <div key={d.id} style={{ padding: "16px 0", borderBottom: "1px solid #203b67" }}>
                 <strong>{d.domain_name}</strong> <span style={{ color: "#72d6a0" }}>{d.status}</span>

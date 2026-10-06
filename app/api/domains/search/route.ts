@@ -31,27 +31,48 @@ export async function GET(req: Request) {
 
     const results = await Promise.all(
       domains.map(async (domain) => {
-        const providerResult = await provider.checkAvailability(domain);
         const tld = "." + domain.split(".").pop()!;
         const pricing = (tlds ?? []).find((item) => item.tld === tld);
-
-        return {
-          ...providerResult,
-          price: pricing?.retail_price ? Number(pricing.retail_price) : providerResult.price,
-          currency: pricing?.currency ?? providerResult.currency,
+        const base = {
+          domain,
+          available: false,
+          price: pricing?.retail_price ? Number(pricing.retail_price) : 0,
+          currency: pricing?.currency ?? "XOF",
+          tld,
           subdomain:
             domain.split(".")[0] +
             "." +
             (process.env.BICKRI_HOSTING_DOMAIN || "bickridomains.com"),
         };
+
+        try {
+          const providerResult = await provider.checkAvailability(domain);
+          return {
+            ...base,
+            ...providerResult,
+            price: base.price || providerResult.price,
+            currency: base.currency || providerResult.currency,
+          };
+        } catch (providerError) {
+          console.error("Domain provider lookup failed:", providerError);
+          return base;
+        }
       })
     );
 
-    return NextResponse.json({ query, results });
+    return NextResponse.json({
+      query,
+      results,
+      extensions: (tlds ?? []).map((item) => ({
+        tld: item.tld,
+        price: Number(item.retail_price),
+        currency: item.currency,
+      })),
+    });
   } catch (error) {
-    console.error("OpenSRS domain search failed:", error);
+    console.error("Domain search failed:", error);
     return NextResponse.json(
-      { error: "Le service de registre de domaines est temporairement indisponible." },
+      { error: "La recherche des domaines est temporairement indisponible." },
       { status: 502 }
     );
   }

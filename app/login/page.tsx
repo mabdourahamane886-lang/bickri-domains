@@ -47,13 +47,15 @@ export default function Login() {
 
     try {
       const result = signup
-        ? await supabase.auth.signUp({
-            email: cleanEmail,
-            password,
-            options: {
-              data: { full_name: name.trim() },
-              emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
-            },
+        ? await fetch("/api/auth/confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: cleanEmail, password, fullName: name.trim() }),
+          }).then(async (response) => {
+            const payload = await response.json();
+            return response.ok
+              ? { data: { user: payload.userId ? { id: payload.userId } : null, session: null }, error: null }
+              : { data: { user: null, session: null }, error: new Error(payload.error || "Création impossible") };
           })
         : await supabase.auth.signInWithPassword({
             email: cleanEmail,
@@ -73,9 +75,17 @@ export default function Login() {
         return;
       }
 
-      if (signup && !result.data.session) {
-        setMsg("Compte créé. Vérifiez votre e-mail pour confirmer votre compte, puis connectez-vous.");
-        return;
+      if (signup && result.data.user) {
+        if (!result.data.session) {
+          const login = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+          if (login.error || !login.data.session) {
+            setMsg("Compte créé. Connectez-vous pour continuer.");
+            return;
+          }
+          router.replace("/dashboard");
+          router.refresh();
+          return;
+        }
       }
 
       if (!result.data.session) {
@@ -136,6 +146,34 @@ export default function Login() {
             {loading ? "Connexion…" : signup ? "Créer mon compte" : "Se connecter"}
           </button>
         </form>
+
+        <div className="socialAuth" aria-label="Autres méthodes de connexion">
+          {(["github", "google"] as const).map((provider) => (
+            <button
+              key={provider}
+              type="button"
+              className="switchAuth"
+              disabled={loading}
+              onClick={async () => {
+                setLoading(true);
+                setMsg("");
+                const supabase = createBrowserSupabaseClient();
+                const { error } = await supabase.auth.signInWithOAuth({
+                  provider,
+                  options: {
+                    redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+                  },
+                });
+                if (error) {
+                  setMsg(`${provider === "github" ? "GitHub" : "Google"} n'est pas encore configuré.`);
+                  setLoading(false);
+                }
+              }}
+            >
+              Continuer avec {provider === "github" ? "GitHub" : "Google"}
+            </button>
+          ))}
+        </div>
 
         {msg && <div className="authMsg" role="alert">{msg}</div>}
 

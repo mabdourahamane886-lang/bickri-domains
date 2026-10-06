@@ -12,6 +12,27 @@ export interface DomainProvider {
   checkAvailability(domain: string): Promise<Availability>;
 }
 
+export type DomainRegistrar = {
+  id: string;
+  name: string;
+  mode: "live" | "test" | "not_configured";
+  capabilities: string[];
+};
+
+export function getDomainRegistrars(): DomainRegistrar[] {
+  const opensrsConfigured = Boolean(process.env.OPENSRS_USERNAME && process.env.OPENSRS_API_KEY);
+  const opensrsTestMode = process.env.OPENSRS_TEST_MODE !== "false";
+
+  return [
+    {
+      id: "opensrs",
+      name: "OpenSRS / Tucows",
+      mode: opensrsConfigured ? (opensrsTestMode ? "test" : "live") : "not_configured",
+      capabilities: ["Disponibilité", "Enregistrement", "Renouvellement", "Transfert"],
+    },
+  ];
+}
+
 export class MockDomainProvider implements DomainProvider {
   async checkAvailability(domain: string) {
     const tld = "." + domain.split(".").pop()!;

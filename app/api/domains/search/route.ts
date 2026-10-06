@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabaseAdmin";
-import { getDomainProvider } from "@/lib/domains/provider";
+import { getDomainProvider, getDomainRegistrars } from "@/lib/domains/provider";
 
 const isDomain = (value: string) => /^[a-z0-9-]+\.[a-z0-9.-]+$/.test(value);
 
@@ -68,6 +68,7 @@ export async function GET(req: Request) {
         price: Number(item.retail_price),
         currency: item.currency,
       })),
+      registrars: getDomainRegistrars(),
     });
   } catch (error) {
     console.error("Domain search failed:", error);
